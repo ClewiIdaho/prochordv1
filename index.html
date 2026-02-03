@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -2627,7 +2626,8 @@
             }
         ]
     };    // ============================================
-    // AUDIO ENGINE - PROFESSIONAL SOUND SYSTEM
+    // AUDIO ENGINE - ROBUST VERSION (NO EXTERNAL SAMPLES)
+    // Uses Tone.js synthesizers for guaranteed sound
     // ============================================
 
     const AudioEngine = {
@@ -2639,343 +2639,332 @@
         effects: {},
         activeNotes: {},
         
-        // Free sample URLs from reliable CDNs
-        sampleUrls: {
-            piano: {
-                baseUrl: 'https://tonejs.github.io/audio/salamander/',
-                notes: {
-                    'A0': 'A0.mp3', 'C1': 'C1.mp3', 'D#1': 'Ds1.mp3', 'F#1': 'Fs1.mp3',
-                    'A1': 'A1.mp3', 'C2': 'C2.mp3', 'D#2': 'Ds2.mp3', 'F#2': 'Fs2.mp3',
-                    'A2': 'A2.mp3', 'C3': 'C3.mp3', 'D#3': 'Ds3.mp3', 'F#3': 'Fs3.mp3',
-                    'A3': 'A3.mp3', 'C4': 'C4.mp3', 'D#4': 'Ds4.mp3', 'F#4': 'Fs4.mp3',
-                    'A4': 'A4.mp3', 'C5': 'C5.mp3', 'D#5': 'Ds5.mp3', 'F#5': 'Fs5.mp3',
-                    'A5': 'A5.mp3', 'C6': 'C6.mp3', 'D#6': 'Ds6.mp3', 'F#6': 'Fs6.mp3',
-                    'A6': 'A6.mp3', 'C7': 'C7.mp3', 'D#7': 'Ds7.mp3', 'F#7': 'Fs7.mp3',
-                    'A7': 'A7.mp3', 'C8': 'C8.mp3'
-                }
-            },
-            drums: {
-                // Using Tone.js drum samples
-                baseUrl: 'https://tonejs.github.io/audio/drum-samples/CR78/',
-                trap: {
-                    kick: 'https://tonejs.github.io/audio/drum-samples/808-kick-vh.mp3',
-                    snare: 'https://tonejs.github.io/audio/drum-samples/snare-vinyl01.mp3',
-                    hihat: 'https://tonejs.github.io/audio/drum-samples/hihat-plain.mp3',
-                    clap: 'https://tonejs.github.io/audio/drum-samples/clap-tape.mp3',
-                    tom1: 'https://tonejs.github.io/audio/drum-samples/tom-acoustic01.mp3',
-                    tom2: 'https://tonejs.github.io/audio/drum-samples/tom-acoustic02.mp3',
-                    crash: 'https://tonejs.github.io/audio/drum-samples/crash-acoustic.mp3',
-                    rim: 'https://tonejs.github.io/audio/drum-samples/rim-acoustic.mp3',
-                    perc1: 'https://tonejs.github.io/audio/drum-samples/perc-tribal.mp3',
-                    perc2: 'https://tonejs.github.io/audio/drum-samples/perc-nasty.mp3',
-                    fx1: 'https://tonejs.github.io/audio/drum-samples/punch.mp3',
-                    fx2: 'https://tonejs.github.io/audio/drum-samples/tom-fm.mp3'
-                },
-                acoustic: {
-                    kick: 'https://tonejs.github.io/audio/drum-samples/breakbeat8/kick.mp3',
-                    snare: 'https://tonejs.github.io/audio/drum-samples/breakbeat8/snare.mp3',
-                    hihat: 'https://tonejs.github.io/audio/drum-samples/breakbeat8/hihat.mp3',
-                    clap: 'https://tonejs.github.io/audio/drum-samples/breakbeat9/snare.mp3',
-                    tom1: 'https://tonejs.github.io/audio/drum-samples/breakbeat13/tom1.mp3',
-                    tom2: 'https://tonejs.github.io/audio/drum-samples/breakbeat13/tom2.mp3',
-                    crash: 'https://tonejs.github.io/audio/drum-samples/breakbeat13/kick.mp3',
-                    rim: 'https://tonejs.github.io/audio/drum-samples/breakbeat9/hihat.mp3'
-                }
-            },
-            guitar: {
-                baseUrl: 'https://tonejs.github.io/audio/guitar-acoustic/',
-                notes: {
-                    'A2': 'A2.mp3', 'A3': 'A3.mp3', 'A4': 'A4.mp3',
-                    'B2': 'B2.mp3', 'B3': 'B3.mp3', 'B4': 'B4.mp3',
-                    'C3': 'C3.mp3', 'C4': 'C4.mp3', 'C5': 'C5.mp3',
-                    'D3': 'D3.mp3', 'D4': 'D4.mp3', 'D5': 'D5.mp3',
-                    'E2': 'E2.mp3', 'E3': 'E3.mp3', 'E4': 'E4.mp3',
-                    'F2': 'F2.mp3', 'F3': 'F3.mp3', 'F4': 'F4.mp3',
-                    'G2': 'G2.mp3', 'G3': 'G3.mp3', 'G4': 'G4.mp3'
-                }
-            }
-        },
-
         // Initialize the audio engine
         async init() {
             if (this.initialized) return true;
             
             try {
-                updateLoadingStatus('Initializing Tone.js...');
+                updateLoadingStatus('Starting audio engine...');
+                
+                // Start Tone.js context
+                await Tone.start();
                 
                 // Create master volume/limiter chain
-                this.masterVolume = new Tone.Volume(CONFIG.masterVolume).toDestination();
+                this.masterVolume = new Tone.Volume(-6).toDestination();
                 
                 // Add limiter to prevent clipping
-                this.effects.limiter = new Tone.Limiter(-3).connect(this.masterVolume);
+                this.effects.limiter = new Tone.Limiter(-2).connect(this.masterVolume);
                 
                 // Add reverb for space
                 this.effects.reverb = new Tone.Reverb({
-                    decay: 1.5,
-                    wet: 0.2
+                    decay: 2,
+                    wet: 0.25
                 }).connect(this.effects.limiter);
-                
-                // Add chorus for richness
-                this.effects.chorus = new Tone.Chorus({
-                    frequency: 1.5,
-                    delayTime: 3.5,
-                    depth: 0.7,
-                    wet: 0.15
-                }).connect(this.effects.reverb);
                 
                 await this.effects.reverb.ready;
                 
-                // Initialize instruments
-                await this.initPiano();
-                await this.initGuitar();
-                await this.initDrums();
-                await this.initSynths();
+                // Add delay
+                this.effects.delay = new Tone.FeedbackDelay({
+                    delayTime: 0.12,
+                    feedback: 0.2,
+                    wet: 0.15
+                }).connect(this.effects.reverb);
+                
+                // Add chorus for richness
+                this.effects.chorus = new Tone.Chorus({
+                    frequency: 2,
+                    delayTime: 3,
+                    depth: 0.5,
+                    wet: 0.2
+                }).connect(this.effects.delay);
+                
+                await this.effects.chorus.start();
+                
+                // Initialize all synth-based instruments
+                updateLoadingStatus('Creating piano...');
+                await this.initPianoSynths();
+                
+                updateLoadingStatus('Creating guitar...');
+                await this.initGuitarSynths();
+                
+                updateLoadingStatus('Creating drums...');
+                await this.initDrumSynths();
                 
                 this.initialized = true;
                 updateLoadingStatus('Audio engine ready!');
+                
+                console.log('✅ Audio Engine initialized successfully');
                 return true;
                 
             } catch (error) {
                 console.error('Audio init error:', error);
-                updateLoadingStatus('Audio init failed, using fallback...');
-                await this.initFallbackSynths();
-                this.initialized = true;
-                return true;
-            }
-        },
-
-        // Initialize Piano Sampler
-        async initPiano() {
-            updateLoadingStatus('Loading piano samples...');
-            
-            try {
-                // Create sampled piano from Salamander Grand Piano
-                const sampleMap = {};
-                const baseUrl = this.sampleUrls.piano.baseUrl;
+                updateLoadingStatus('Setting up basic audio...');
                 
-                for (const [note, file] of Object.entries(this.sampleUrls.piano.notes)) {
-                    sampleMap[note] = baseUrl + file;
+                // Even simpler fallback
+                try {
+                    await this.initBasicFallback();
+                    this.initialized = true;
+                    return true;
+                } catch (e2) {
+                    console.error('Fallback also failed:', e2);
+                    updateLoadingStatus('Audio ready (basic mode)');
+                    this.initialized = true;
+                    return true;
                 }
-                
-                this.instruments.pianoSampler = new Tone.Sampler({
-                    urls: sampleMap,
-                    release: 1,
-                    baseUrl: '',
-                    onload: () => {
-                        console.log('Piano sampler loaded');
-                    }
-                }).connect(this.effects.chorus);
-                
-                // Wait for samples to load (with timeout)
-                await this.waitForLoad(this.instruments.pianoSampler, 10000);
-                
-            } catch (error) {
-                console.warn('Piano sampler failed, using synth fallback');
-                this.instruments.pianoSampler = null;
             }
         },
 
-        // Initialize Guitar Sampler
-        async initGuitar() {
-            updateLoadingStatus('Loading guitar samples...');
-            
-            try {
-                const sampleMap = {};
-                const baseUrl = this.sampleUrls.guitar.baseUrl;
-                
-                for (const [note, file] of Object.entries(this.sampleUrls.guitar.notes)) {
-                    sampleMap[note] = baseUrl + file;
+        // Initialize Piano Synthesizers
+        async initPianoSynths() {
+            // Grand Piano - Rich layered sound
+            this.instruments.grandPiano = new Tone.PolySynth(Tone.Synth, {
+                maxPolyphony: 16,
+                voice: Tone.Synth,
+                options: {
+                    oscillator: {
+                        type: 'fatsine',
+                        count: 3,
+                        spread: 20
+                    },
+                    envelope: {
+                        attack: 0.01,
+                        decay: 0.5,
+                        sustain: 0.3,
+                        release: 1.5
+                    }
                 }
-                
-                this.instruments.guitarSampler = new Tone.Sampler({
-                    urls: sampleMap,
-                    release: 1.5,
-                    baseUrl: '',
-                    onload: () => {
-                        console.log('Guitar sampler loaded');
-                    }
-                }).connect(this.effects.chorus);
-                
-                await this.waitForLoad(this.instruments.guitarSampler, 10000);
-                
-            } catch (error) {
-                console.warn('Guitar sampler failed, using synth fallback');
-                this.instruments.guitarSampler = null;
-            }
-        },
-
-        // Initialize Drum Machine
-        async initDrums() {
-            updateLoadingStatus('Loading drum samples...');
-            
-            try {
-                // Load trap drum kit
-                this.instruments.drumsTrap = new Tone.Players({
-                    urls: this.sampleUrls.drums.trap,
-                    onload: () => {
-                        console.log('Trap drums loaded');
-                    }
-                }).connect(this.effects.limiter);
-                
-                await this.waitForLoad(this.instruments.drumsTrap, 10000);
-                
-            } catch (error) {
-                console.warn('Drum samples failed, using synth fallback');
-                this.instruments.drumsTrap = null;
-            }
-            
-            // Create synth drum fallbacks
-            this.instruments.drumSynths = {
-                kick: new Tone.MembraneSynth({
-                    pitchDecay: 0.05,
-                    octaves: 6,
-                    oscillator: { type: 'sine' },
-                    envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 0.5 }
-                }).connect(this.effects.limiter),
-                
-                snare: new Tone.NoiseSynth({
-                    noise: { type: 'white' },
-                    envelope: { attack: 0.001, decay: 0.2, sustain: 0, release: 0.2 }
-                }).connect(this.effects.limiter),
-                
-                hihat: new Tone.MetalSynth({
-                    frequency: 250,
-                    envelope: { attack: 0.001, decay: 0.1, release: 0.01 },
-                    harmonicity: 5.1,
-                    modulationIndex: 32,
-                    resonance: 4000,
-                    octaves: 1.5
-                }).connect(this.effects.limiter),
-                
-                clap: new Tone.NoiseSynth({
-                    noise: { type: 'pink' },
-                    envelope: { attack: 0.005, decay: 0.15, sustain: 0, release: 0.1 }
-                }).connect(this.effects.limiter),
-                
-                tom: new Tone.MembraneSynth({
-                    pitchDecay: 0.08,
-                    octaves: 4,
-                    oscillator: { type: 'sine' },
-                    envelope: { attack: 0.001, decay: 0.3, sustain: 0.01, release: 0.4 }
-                }).connect(this.effects.limiter)
-            };
-        },
-
-        // Initialize Synthesizers for all instruments
-        async initSynths() {
-            updateLoadingStatus('Initializing synthesizers...');
-            
-            // Grand Piano Synth (fallback/alternative)
-            this.instruments.pianoSynth = new Tone.PolySynth(Tone.Synth, {
-                oscillator: { type: 'triangle8' },
-                envelope: {
-                    attack: 0.02,
-                    decay: 0.3,
-                    sustain: 0.4,
-                    release: 1.2
-                },
-                volume: -6
             }).connect(this.effects.chorus);
+            this.instruments.grandPiano.volume.value = -8;
             
-            // Electric Piano Synth
+            // Electric Piano - FM synthesis
             this.instruments.electricPiano = new Tone.PolySynth(Tone.FMSynth, {
-                harmonicity: 3,
-                modulationIndex: 10,
-                oscillator: { type: 'sine' },
-                envelope: { attack: 0.01, decay: 0.2, sustain: 0.3, release: 0.8 },
-                modulation: { type: 'square' },
-                modulationEnvelope: { attack: 0.5, decay: 0.1, sustain: 0.2, release: 0.5 },
-                volume: -8
+                maxPolyphony: 12,
+                voice: Tone.FMSynth,
+                options: {
+                    harmonicity: 3.01,
+                    modulationIndex: 14,
+                    oscillator: { type: 'triangle' },
+                    envelope: { attack: 0.01, decay: 0.2, sustain: 0.2, release: 0.8 },
+                    modulation: { type: 'square' },
+                    modulationEnvelope: { attack: 0.002, decay: 0.2, sustain: 0, release: 0.5 }
+                }
             }).connect(this.effects.chorus);
+            this.instruments.electricPiano.volume.value = -10;
             
-            // Synth Keys
+            // Synth Keys - Classic synth
             this.instruments.synthKeys = new Tone.PolySynth(Tone.Synth, {
-                oscillator: { type: 'square8' },
-                envelope: { attack: 0.01, decay: 0.2, sustain: 0.5, release: 0.5 },
-                volume: -10
+                maxPolyphony: 12,
+                voice: Tone.Synth,
+                options: {
+                    oscillator: { type: 'sawtooth' },
+                    envelope: { attack: 0.01, decay: 0.3, sustain: 0.5, release: 0.4 },
+                    filterEnvelope: { attack: 0.01, decay: 0.2, sustain: 0.5, release: 0.5 }
+                }
             }).connect(this.effects.chorus);
+            this.instruments.synthKeys.volume.value = -12;
             
-            // Bright Piano
+            // Bright Piano - Bell-like
             this.instruments.brightPiano = new Tone.PolySynth(Tone.Synth, {
-                oscillator: { type: 'sine' },
-                envelope: { attack: 0.005, decay: 0.4, sustain: 0.3, release: 1 },
-                volume: -6
+                maxPolyphony: 12,
+                voice: Tone.Synth,
+                options: {
+                    oscillator: { type: 'sine' },
+                    envelope: { attack: 0.005, decay: 0.4, sustain: 0.2, release: 1.2 }
+                }
             }).connect(this.effects.chorus);
-            
-            // Guitar Synth (fallback)
-            this.instruments.guitarSynth = new Tone.PolySynth(Tone.PluckSynth, {
-                attackNoise: 1,
-                dampening: 4000,
-                resonance: 0.98,
-                volume: -6
-            }).connect(this.effects.chorus);
-            
-            // Nylon Guitar
-            this.instruments.nylonGuitar = new Tone.PolySynth(Tone.Synth, {
-                oscillator: { type: 'sine' },
-                envelope: { attack: 0.02, decay: 0.5, sustain: 0.2, release: 1 },
-                volume: -8
-            }).connect(this.effects.chorus);
+            this.instruments.brightPiano.volume.value = -6;
         },
 
-        // Initialize fallback synths if samples fail
-        async initFallbackSynths() {
-            this.masterVolume = new Tone.Volume(CONFIG.masterVolume).toDestination();
+        // Initialize Guitar Synthesizers
+        async initGuitarSynths() {
+            // Acoustic Guitar - Pluck synth
+            this.instruments.acousticGuitar = new Tone.PolySynth(Tone.PluckSynth, {
+                maxPolyphony: 8,
+                voice: Tone.PluckSynth,
+                options: {
+                    attackNoise: 1.5,
+                    dampening: 3500,
+                    resonance: 0.97
+                }
+            }).connect(this.effects.delay);
+            this.instruments.acousticGuitar.volume.value = -6;
+            
+            // Electric Guitar - Distorted
+            this.instruments.electricGuitar = new Tone.PolySynth(Tone.MonoSynth, {
+                maxPolyphony: 6,
+                voice: Tone.MonoSynth,
+                options: {
+                    oscillator: { type: 'sawtooth' },
+                    envelope: { attack: 0.01, decay: 0.3, sustain: 0.5, release: 0.8 },
+                    filterEnvelope: { attack: 0.01, decay: 0.2, sustain: 0.4, release: 0.5 }
+                }
+            }).connect(this.effects.delay);
+            this.instruments.electricGuitar.volume.value = -10;
+            
+            // Nylon Guitar - Soft mellow
+            this.instruments.nylonGuitar = new Tone.PolySynth(Tone.Synth, {
+                maxPolyphony: 8,
+                voice: Tone.Synth,
+                options: {
+                    oscillator: { type: 'sine' },
+                    envelope: { attack: 0.03, decay: 0.6, sustain: 0.2, release: 1.0 }
+                }
+            }).connect(this.effects.delay);
+            this.instruments.nylonGuitar.volume.value = -8;
+        },
+
+        // Initialize Drum Synthesizers
+        async initDrumSynths() {
+            // 808 Kick
+            this.instruments.kick = new Tone.MembraneSynth({
+                pitchDecay: 0.08,
+                octaves: 6,
+                oscillator: { type: 'sine' },
+                envelope: { attack: 0.001, decay: 0.5, sustain: 0, release: 0.5 }
+            }).connect(this.effects.limiter);
+            this.instruments.kick.volume.value = -4;
+            
+            // Snare
+            this.instruments.snare = new Tone.NoiseSynth({
+                noise: { type: 'white', playbackRate: 3 },
+                envelope: { attack: 0.001, decay: 0.2, sustain: 0, release: 0.15 }
+            }).connect(this.effects.limiter);
+            this.instruments.snare.volume.value = -8;
+            
+            // Snare body (layered with noise)
+            this.instruments.snareBody = new Tone.MembraneSynth({
+                pitchDecay: 0.01,
+                octaves: 4,
+                oscillator: { type: 'triangle' },
+                envelope: { attack: 0.001, decay: 0.15, sustain: 0, release: 0.1 }
+            }).connect(this.effects.limiter);
+            this.instruments.snareBody.volume.value = -12;
+            
+            // Hi-Hat Closed
+            this.instruments.hihat = new Tone.MetalSynth({
+                frequency: 350,
+                envelope: { attack: 0.001, decay: 0.08, release: 0.01 },
+                harmonicity: 5.1,
+                modulationIndex: 40,
+                resonance: 3500,
+                octaves: 1
+            }).connect(this.effects.limiter);
+            this.instruments.hihat.volume.value = -16;
+            
+            // Clap
+            this.instruments.clap = new Tone.NoiseSynth({
+                noise: { type: 'pink' },
+                envelope: { attack: 0.005, decay: 0.15, sustain: 0, release: 0.1 }
+            }).connect(this.effects.reverb);
+            this.instruments.clap.volume.value = -10;
+            
+            // Tom High
+            this.instruments.tomHigh = new Tone.MembraneSynth({
+                pitchDecay: 0.05,
+                octaves: 3,
+                oscillator: { type: 'sine' },
+                envelope: { attack: 0.001, decay: 0.3, sustain: 0, release: 0.3 }
+            }).connect(this.effects.limiter);
+            this.instruments.tomHigh.volume.value = -8;
+            
+            // Tom Low
+            this.instruments.tomLow = new Tone.MembraneSynth({
+                pitchDecay: 0.06,
+                octaves: 4,
+                oscillator: { type: 'sine' },
+                envelope: { attack: 0.001, decay: 0.35, sustain: 0, release: 0.35 }
+            }).connect(this.effects.limiter);
+            this.instruments.tomLow.volume.value = -8;
+            
+            // Crash
+            this.instruments.crash = new Tone.MetalSynth({
+                frequency: 280,
+                envelope: { attack: 0.001, decay: 1.2, release: 0.8 },
+                harmonicity: 3.1,
+                modulationIndex: 20,
+                resonance: 3000,
+                octaves: 1.5
+            }).connect(this.effects.reverb);
+            this.instruments.crash.volume.value = -14;
+            
+            // Rim
+            this.instruments.rim = new Tone.MembraneSynth({
+                pitchDecay: 0.008,
+                octaves: 2,
+                oscillator: { type: 'triangle' },
+                envelope: { attack: 0.001, decay: 0.05, sustain: 0, release: 0.02 }
+            }).connect(this.effects.limiter);
+            this.instruments.rim.volume.value = -10;
+            
+            // Percussion (shaker-like)
+            this.instruments.perc = new Tone.NoiseSynth({
+                noise: { type: 'brown' },
+                envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.05 }
+            }).connect(this.effects.limiter);
+            this.instruments.perc.volume.value = -14;
+            
+            // FX - Laser/zap
+            this.instruments.fx = new Tone.Synth({
+                oscillator: { type: 'sawtooth' },
+                envelope: { attack: 0.001, decay: 0.3, sustain: 0, release: 0.1 }
+            }).connect(this.effects.delay);
+            this.instruments.fx.volume.value = -12;
+        },
+
+        // Basic fallback if everything fails
+        async initBasicFallback() {
+            this.masterVolume = new Tone.Volume(-6).toDestination();
             this.effects.limiter = new Tone.Limiter(-3).connect(this.masterVolume);
             
-            this.instruments.pianoSynth = new Tone.PolySynth(Tone.Synth, {
-                oscillator: { type: 'triangle8' },
-                envelope: { attack: 0.02, decay: 0.3, sustain: 0.4, release: 1.2 },
-                volume: -6
-            }).connect(this.effects.limiter);
+            // One simple synth for everything
+            this.instruments.basicSynth = new Tone.PolySynth(Tone.Synth).connect(this.effects.limiter);
+            this.instruments.basicSynth.volume.value = -8;
             
-            this.instruments.guitarSynth = new Tone.PolySynth(Tone.PluckSynth, {
-                volume: -6
-            }).connect(this.effects.limiter);
-            
-            await this.initDrums();
-        },
-
-        // Wait for sampler to load with timeout
-        waitForLoad(sampler, timeout = 10000) {
-            return new Promise((resolve, reject) => {
-                if (sampler.loaded) {
-                    resolve();
-                    return;
-                }
-                
-                const checkInterval = setInterval(() => {
-                    if (sampler.loaded) {
-                        clearInterval(checkInterval);
-                        clearTimeout(timeoutId);
-                        resolve();
-                    }
-                }, 100);
-                
-                const timeoutId = setTimeout(() => {
-                    clearInterval(checkInterval);
-                    reject(new Error('Sample load timeout'));
-                }, timeout);
-            });
+            // Basic drum sounds
+            this.instruments.kick = new Tone.MembraneSynth().connect(this.effects.limiter);
+            this.instruments.snare = new Tone.NoiseSynth().connect(this.effects.limiter);
+            this.instruments.hihat = new Tone.MetalSynth().connect(this.effects.limiter);
+            this.instruments.hihat.volume.value = -20;
         },
 
         // Start audio context (required for browsers)
         async startContext() {
             if (Tone.context.state !== 'running') {
                 await Tone.start();
+                console.log('Audio context started');
             }
         },
 
         // ============== PLAY FUNCTIONS ==============
 
+        // Get the active piano instrument based on sound pack
+        getActivePianoInstrument() {
+            switch (this.currentSoundPack) {
+                case 'grand': return this.instruments.grandPiano;
+                case 'electric': return this.instruments.electricPiano;
+                case 'synth': return this.instruments.synthKeys;
+                case 'bright': return this.instruments.brightPiano;
+                default: return this.instruments.grandPiano || this.instruments.basicSynth;
+            }
+        },
+
+        // Get the active guitar instrument
+        getActiveGuitarInstrument() {
+            switch (this.currentSoundPack) {
+                case 'acoustic': return this.instruments.acousticGuitar;
+                case 'electric': return this.instruments.electricGuitar;
+                case 'nylon': return this.instruments.nylonGuitar;
+                default: return this.instruments.acousticGuitar || this.instruments.basicSynth;
+            }
+        },
+
         // Play a piano note
         playPiano(note, duration = '8n', velocity = 0.8) {
             this.startContext();
             
-            const instrument = this.getActivePianoInstrument();
-            
             try {
-                if (instrument && instrument.triggerAttackRelease) {
+                const instrument = this.getActivePianoInstrument();
+                if (instrument) {
                     instrument.triggerAttackRelease(note, duration, Tone.now(), velocity);
                 }
             } catch (e) {
@@ -2991,10 +2980,9 @@
             
             if (this.activeNotes[note]) return;
             
-            const instrument = this.getActivePianoInstrument();
-            
             try {
-                if (instrument && instrument.triggerAttack) {
+                const instrument = this.getActivePianoInstrument();
+                if (instrument) {
                     instrument.triggerAttack(note, Tone.now(), velocity);
                     this.activeNotes[note] = true;
                 }
@@ -3009,42 +2997,25 @@
         stopPianoNote(note) {
             if (!this.activeNotes[note]) return;
             
-            const instrument = this.getActivePianoInstrument();
-            
             try {
-                if (instrument && instrument.triggerRelease) {
+                const instrument = this.getActivePianoInstrument();
+                if (instrument) {
                     instrument.triggerRelease(note, Tone.now());
-                    delete this.activeNotes[note];
                 }
             } catch (e) {
                 console.warn('Piano stop error:', e);
             }
-        },
-
-        // Get the currently active piano instrument
-        getActivePianoInstrument() {
-            switch (this.currentSoundPack) {
-                case 'grand':
-                    return this.instruments.pianoSampler || this.instruments.pianoSynth;
-                case 'electric':
-                    return this.instruments.electricPiano || this.instruments.pianoSynth;
-                case 'synth':
-                    return this.instruments.synthKeys || this.instruments.pianoSynth;
-                case 'bright':
-                    return this.instruments.brightPiano || this.instruments.pianoSynth;
-                default:
-                    return this.instruments.pianoSampler || this.instruments.pianoSynth;
-            }
+            
+            delete this.activeNotes[note];
         },
 
         // Play guitar note
         playGuitar(note, duration = '4n', velocity = 0.8) {
             this.startContext();
             
-            const instrument = this.getActiveGuitarInstrument();
-            
             try {
-                if (instrument && instrument.triggerAttackRelease) {
+                const instrument = this.getActiveGuitarInstrument();
+                if (instrument) {
                     instrument.triggerAttackRelease(note, duration, Tone.now(), velocity);
                 }
             } catch (e) {
@@ -3059,41 +3030,30 @@
             this.startContext();
             
             const chord = GUITAR_CHORDS[chordName];
-            if (!chord) return;
+            if (!chord) {
+                console.warn('Unknown chord:', chordName);
+                return;
+            }
             
             const instrument = this.getActiveGuitarInstrument();
             if (!instrument) return;
             
             const notes = direction === 'down' ? chord.notes : [...chord.notes].reverse();
-            const strumDelay = 0.03; // 30ms between strings
+            const strumDelay = 0.025; // 25ms between strings for realistic strum
             
             notes.forEach((note, index) => {
                 const time = Tone.now() + (index * strumDelay);
+                const vel = 0.6 + (Math.random() * 0.2); // Slight velocity variation
+                
                 try {
-                    instrument.triggerAttackRelease(note, duration, time, 0.7);
+                    instrument.triggerAttackRelease(note, duration, time, vel);
                 } catch (e) {
-                    console.warn('Strum error:', e);
+                    console.warn('Strum note error:', e);
                 }
             });
             
             this.triggerVisualizer();
-            
-            // Animate strings
             this.animateStrings();
-        },
-
-        // Get the currently active guitar instrument
-        getActiveGuitarInstrument() {
-            switch (this.currentSoundPack) {
-                case 'acoustic':
-                    return this.instruments.guitarSampler || this.instruments.guitarSynth;
-                case 'electric':
-                    return this.instruments.guitarSynth;
-                case 'nylon':
-                    return this.instruments.nylonGuitar || this.instruments.guitarSynth;
-                default:
-                    return this.instruments.guitarSampler || this.instruments.guitarSynth;
-            }
         },
 
         // Animate guitar strings
@@ -3103,7 +3063,7 @@
                 setTimeout(() => {
                     string.classList.add('vibrate');
                     setTimeout(() => string.classList.remove('vibrate'), 300);
-                }, i * 30);
+                }, i * 25);
             });
         },
 
@@ -3112,62 +3072,62 @@
             this.startContext();
             
             try {
-                // Try sampler first
-                if (this.instruments.drumsTrap && this.instruments.drumsTrap.has(drumId)) {
-                    const player = this.instruments.drumsTrap.player(drumId);
-                    player.volume.value = Tone.gainToDb(velocity);
-                    player.start();
-                    this.triggerVisualizer();
-                    return;
+                switch (drumId) {
+                    case 'kick':
+                        this.instruments.kick?.triggerAttackRelease('C1', '8n', Tone.now(), velocity);
+                        break;
+                        
+                    case 'snare':
+                        this.instruments.snare?.triggerAttackRelease('16n', Tone.now(), velocity);
+                        this.instruments.snareBody?.triggerAttackRelease('E2', '16n', Tone.now(), velocity * 0.6);
+                        break;
+                        
+                    case 'hihat':
+                        this.instruments.hihat?.triggerAttackRelease('32n', Tone.now(), velocity * 0.7);
+                        break;
+                        
+                    case 'clap':
+                        this.instruments.clap?.triggerAttackRelease('8n', Tone.now(), velocity);
+                        break;
+                        
+                    case 'tom1':
+                        this.instruments.tomHigh?.triggerAttackRelease('G3', '8n', Tone.now(), velocity);
+                        break;
+                        
+                    case 'tom2':
+                        this.instruments.tomLow?.triggerAttackRelease('D3', '8n', Tone.now(), velocity);
+                        break;
+                        
+                    case 'crash':
+                        this.instruments.crash?.triggerAttackRelease('16n', Tone.now(), velocity);
+                        break;
+                        
+                    case 'rim':
+                        this.instruments.rim?.triggerAttackRelease('G4', '32n', Tone.now(), velocity);
+                        break;
+                        
+                    case 'perc1':
+                        this.instruments.perc?.triggerAttackRelease('16n', Tone.now(), velocity);
+                        break;
+                        
+                    case 'perc2':
+                        this.instruments.perc?.triggerAttackRelease('8n', Tone.now(), velocity * 0.8);
+                        break;
+                        
+                    case 'fx1':
+                        this.instruments.fx?.triggerAttackRelease('C6', '16n', Tone.now(), velocity);
+                        break;
+                        
+                    case 'fx2':
+                        this.instruments.fx?.triggerAttackRelease('G5', '8n', Tone.now(), velocity);
+                        break;
+                        
+                    default:
+                        // Generic drum hit
+                        this.instruments.kick?.triggerAttackRelease('C2', '8n', Tone.now(), velocity);
                 }
-                
-                // Fall back to synth drums
-                this.playDrumSynth(drumId, velocity);
-                
             } catch (e) {
                 console.warn('Drum play error:', e);
-                this.playDrumSynth(drumId, velocity);
-            }
-        },
-
-        // Play drum using synth (fallback)
-        playDrumSynth(drumId, velocity = 0.9) {
-            const synths = this.instruments.drumSynths;
-            if (!synths) return;
-            
-            switch (drumId) {
-                case 'kick':
-                    synths.kick?.triggerAttackRelease('C1', '8n', Tone.now(), velocity);
-                    break;
-                case 'snare':
-                    synths.snare?.triggerAttackRelease('8n', Tone.now(), velocity);
-                    break;
-                case 'hihat':
-                    synths.hihat?.triggerAttackRelease('32n', Tone.now(), velocity * 0.6);
-                    break;
-                case 'clap':
-                    synths.clap?.triggerAttackRelease('16n', Tone.now(), velocity);
-                    break;
-                case 'tom1':
-                    synths.tom?.triggerAttackRelease('G2', '8n', Tone.now(), velocity);
-                    break;
-                case 'tom2':
-                    synths.tom?.triggerAttackRelease('D2', '8n', Tone.now(), velocity);
-                    break;
-                case 'crash':
-                    synths.hihat?.triggerAttackRelease('4n', Tone.now(), velocity);
-                    break;
-                case 'rim':
-                    synths.snare?.triggerAttackRelease('32n', Tone.now(), velocity * 0.7);
-                    break;
-                case 'perc1':
-                case 'perc2':
-                    synths.tom?.triggerAttackRelease('A3', '16n', Tone.now(), velocity * 0.8);
-                    break;
-                case 'fx1':
-                case 'fx2':
-                    synths.kick?.triggerAttackRelease('C2', '4n', Tone.now(), velocity * 0.7);
-                    break;
             }
             
             this.triggerVisualizer();
@@ -3213,6 +3173,7 @@
                 case 'piano':
                     this.stopPianoNote(note);
                     break;
+                // Guitar and drums don't need note-off
             }
         },
 
@@ -3220,11 +3181,14 @@
         setInstrument(instrument) {
             this.currentInstrument = instrument;
             
-            // Set default sound pack
-            const packs = Object.keys(SOUND_PACKS[instrument] || {});
-            if (packs.length > 0) {
-                this.currentSoundPack = packs[0];
-            }
+            // Set default sound pack for the instrument
+            const defaultPacks = {
+                piano: 'grand',
+                guitar: 'acoustic',
+                drums: 'trap'
+            };
+            
+            this.currentSoundPack = defaultPacks[instrument] || 'grand';
         },
 
         // Set sound pack
@@ -3232,31 +3196,41 @@
             this.currentSoundPack = pack;
         },
 
-        // Trigger visualizer
+        // Trigger visualizer animation
         triggerVisualizer() {
-            if (window.Visualizer) {
+            if (window.Visualizer && Visualizer.trigger) {
                 Visualizer.trigger();
             }
         },
 
-        // Set master volume
+        // Set master volume (0 to 1)
         setVolume(value) {
             if (this.masterVolume) {
-                this.masterVolume.volume.value = Tone.gainToDb(value);
+                // Convert 0-1 to dB (-60 to 0)
+                const db = value > 0 ? 20 * Math.log10(value) : -60;
+                this.masterVolume.volume.value = Math.max(-60, Math.min(0, db));
             }
         },
 
         // Cleanup
         dispose() {
-            Object.values(this.instruments).forEach(inst => {
-                if (inst && inst.dispose) {
-                    inst.dispose();
-                }
+            // Stop all active notes
+            Object.keys(this.activeNotes).forEach(note => {
+                this.stopNote(note);
             });
+            
+            // Dispose instruments
+            Object.values(this.instruments).forEach(inst => {
+                try {
+                    if (inst && inst.dispose) inst.dispose();
+                } catch (e) {}
+            });
+            
+            // Dispose effects
             Object.values(this.effects).forEach(effect => {
-                if (effect && effect.dispose) {
-                    effect.dispose();
-                }
+                try {
+                    if (effect && effect.dispose) effect.dispose();
+                } catch (e) {}
             });
         }
     };
@@ -3269,12 +3243,13 @@
         bars: [],
         isActive: false,
         animationId: null,
+        container: null,
         
         init() {
-            const container = document.getElementById('audio-visualizer');
-            if (!container) return;
+            this.container = document.getElementById('audio-visualizer');
+            if (!this.container) return;
             
-            container.innerHTML = '';
+            this.container.innerHTML = '';
             this.bars = [];
             
             const barCount = 50;
@@ -3282,7 +3257,7 @@
                 const bar = document.createElement('div');
                 bar.className = 'viz-bar';
                 bar.style.height = '3px';
-                container.appendChild(bar);
+                this.container.appendChild(bar);
                 this.bars.push({
                     element: bar,
                     velocity: 0,
@@ -3292,11 +3267,13 @@
         },
         
         trigger() {
+            if (!this.bars.length) return;
+            
             // Trigger random bars to animate
-            const numBars = Math.floor(Math.random() * 15) + 10;
+            const numBars = Math.floor(Math.random() * 20) + 8;
             for (let i = 0; i < numBars; i++) {
                 const idx = Math.floor(Math.random() * this.bars.length);
-                this.bars[idx].velocity = Math.random() * 50 + 30;
+                this.bars[idx].velocity = Math.random() * 60 + 25;
             }
             
             if (!this.isActive) {
@@ -3311,12 +3288,13 @@
             this.bars.forEach(bar => {
                 if (bar.velocity > 0) {
                     bar.height = Math.min(100, bar.height + bar.velocity * 0.3);
-                    bar.velocity *= 0.9;
+                    bar.velocity *= 0.88;
+                    if (bar.velocity < 0.5) bar.velocity = 0;
                     hasActivity = true;
                 }
                 
                 // Decay
-                bar.height *= 0.92;
+                bar.height *= 0.94;
                 bar.height = Math.max(3, bar.height);
                 
                 bar.element.style.height = bar.height + 'px';
@@ -3328,6 +3306,13 @@
                 this.animationId = requestAnimationFrame(() => this.animate());
             } else {
                 this.isActive = false;
+            }
+        },
+        
+        stop() {
+            this.isActive = false;
+            if (this.animationId) {
+                cancelAnimationFrame(this.animationId);
             }
         }
     };
